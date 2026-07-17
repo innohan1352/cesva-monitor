@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>CESVA Monitor</title>
+<style>
+*,::before,::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:#f0f2f6;color:#1a1d2e;font-family:'JetBrains Mono',monospace;overflow:hidden;touch-action:manipulation;}
+:root{
+  --bg:#f0f2f6;--sf:#ffffff;--sf2:#f5f7fb;--sf3:#eef0f7;
+  --bd:#dde0ec;--bd2:#c5c9dc;
+  --t1:#1a1d2e;--t2:#4a5070;--t3:#8a90a8;
+  --ac:#1976d2;--ac-l:#e3f0fd;
+  --gn:#059669;--gn-l:#ecfdf5;
+  --am:#d97706;--am-l:#fffbeb;
+  --rd:#dc2626;--rd-l:#fef2f2;
+  --pu:#7c3aed;--pu-l:#f5f3ff;
+  --fn:'JetBrains Mono',monospace;
+}
+
+/* ── 로그인 ── */
+#loginScreen{position:fixed;inset:0;background:#f0f2f6;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:0;}
+#loginScreen.hidden{display:none;}
+.login-logo{font-size:28px;font-weight:900;color:var(--ac);letter-spacing:2px;margin-bottom:6px;}
+.login-sub{font-size:10px;color:var(--t3);letter-spacing:2px;margin-bottom:40px;}
+.login-box{width:280px;display:flex;flex-direction:column;gap:10px;}
+.login-inp{width:100%;padding:14px;border:2px solid var(--bd);background:#fff;color:var(--t1);font-size:22px;letter-spacing:6px;text-align:center;outline:none;}
+.login-inp:focus{border-color:var(--ac);}
+.login-btn{width:100%;padding:14px;background:var(--ac);color:#fff;border:none;font-size:14px;font-weight:900;cursor:pointer;letter-spacing:1px;}
+.login-err{color:var(--rd);font-size:11px;text-align:center;height:16px;}
+
+/* ── 앱 레이아웃 ── */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+
+/* ── 헤더 ── */
+.hdr{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:var(--ac);flex-shrink:0;}
+.hdr-left{display:flex;align-items:center;gap:10px;}
+.hdr-title{font-size:14px;font-weight:900;color:#fff;letter-spacing:.5px;}
+.hdr-sub{font-size:8px;color:rgba(255,255,255,.7);letter-spacing:.5px;}
+.hdr-right{display:flex;align-items:center;gap:8px;}
+.conn-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);font-size:9px;color:rgba(255,255,255,.9);}
+.conn-chip.ok{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.25);}
+.chip-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);}
+.conn-chip.ok .chip-dot{background:#fff;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.wake-btn{padding:4px 8px;border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.7);font-size:9px;cursor:pointer;}
+.wake-btn.on{background:rgba(255,255,255,.25);color:#fff;}
+
+/* ── 탭 바 ── */
+.tab-bar{display:flex;background:#fff;border-bottom:2px solid var(--bd);flex-shrink:0;}
+.tab{flex:1;padding:12px 0;text-align:center;font-size:12px;font-weight:700;color:var(--t3);border:none;background:transparent;cursor:pointer;letter-spacing:.5px;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tab.active{color:var(--ac);border-bottom-color:var(--ac);}
+/* ── 콘텐츠 ── */
+.page{display:none;flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg);}
+.page.active{display:flex;flex-direction:column;}
+/* ══ 소음 모드 ══ */
+.big-wrap{padding:12px 12px 8px;flex-shrink:0;}
+.big-card{background:#fff;border:1px solid var(--bd);padding:16px 12px 12px;text-align:center;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.big-tap-hint{position:absolute;top:8px;right:10px;font-size:8px;color:var(--t3);}
+.big-lbl{font-size:10px;font-weight:700;color:var(--t2);letter-spacing:1px;margin-bottom:6px;}
+.big-val{font-size:80px;font-weight:900;line-height:1;letter-spacing:-4px;color:var(--ac);font-variant-numeric:tabular-nums;}
+.big-val.warn{color:var(--am);}
+.big-val.danger{color:var(--rd);}
+.big-unit{font-size:12px;color:var(--t3);margin-top:4px;}
+.big-ov{display:none;margin-top:4px;padding:2px 8px;background:var(--rd);color:#fff;font-size:8px;animation:flash .5s infinite;}
+.big-ov.show{display:inline-block;}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.1}}
+.vu-wrap{margin-top:10px;}
+.vu-bg{height:6px;background:var(--sf3);border:1px solid var(--bd);overflow:hidden;}
+.vu-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gn) 0%,var(--gn) 58%,var(--am) 74%,var(--am) 87%,var(--rd) 100%);transition:width .08s linear;}
+.vu-scale{display:flex;justify-content:space-between;padding:2px 1px 0;}
+.vu-n{font-size:7px;color:var(--t3);}
+/* 파라미터 카드 */
+.pcards-wrap{padding:0 12px;flex-shrink:0;}
+.pcards-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.sec-lbl{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:4px;}
+.sec-lbl::before{content:'';width:3px;height:9px;background:var(--ac);display:inline-block;}
+.sec-btn{padding:3px 9px;border:1px solid var(--bd);background:transparent;color:var(--t3);font-size:9px;cursor:pointer;}
+.sec-btn:active{background:var(--ac-l);color:var(--ac);}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.pcard{background:#fff;border:1px solid var(--bd);padding:10px 8px 8px;display:flex;flex-direction:column;min-height:88px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.pcard.alert{border-color:var(--rd);background:var(--rd-l);}
+.pcard.alert .pc-val{color:var(--rd)!important;}
+.pc-lbl{font-size:9px;font-weight:700;color:var(--t2);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pc-val{font-size:28px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;flex:1;display:flex;align-items:center;}
+.pc-unit{font-size:8px;color:var(--t3);margin-top:4px;}
+.pc-bar{height:2px;background:var(--sf3);margin-top:5px;overflow:hidden;}
+.pc-bar-fill{height:100%;transition:width .15s;}
+/* 측정 시간 */
+.time-wrap{padding:8px 12px 12px;flex-shrink:0;}
+.time-card{background:#fff;border:1px solid var(--bd);padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.time-item{display:flex;flex-direction:column;gap:3px;}
+.time-item:last-child{text-align:right;align-items:flex-end;}
+.time-lbl{font-size:8px;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;}
+.time-val{font-size:16px;font-weight:700;color:var(--gn);letter-spacing:1px;font-variant-numeric:tabular-nums;}
+.time-val.start{color:var(--ac);}
+/* ══ 주파수 모드 ══ */
+.fq-overall{padding:12px 12px 8px;flex-shrink:0;}
+.fq-ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.fq-ov-card{background:#fff;border:1px solid var(--bd);padding:10px 8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.fq-ov-lbl{font-size:8px;font-weight:700;color:var(--t3);letter-spacing:.5px;margin-bottom:5px;}
+.fq-ov-val{font-size:26px;font-weight:900;color:var(--t1);font-variant-numeric:tabular-nums;}
+.fq-ov-unit{font-size:7px;color:var(--t3);margin-top:2px;}
+/* 주파수 설정 */
+.fq-ctrl-wrap{padding:0 12px 8px;flex-shrink:0;}
+.fq-ctrl{display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
+.fq-btn{padding:5px 10px;border:1px solid var(--bd);background:#fff;color:var(--t3);font-size:9px;font-family:var(--fn);cursor:pointer;}
+.fq-btn.on{background:var(--ac);color:#fff;border-color:var(--ac);}
+.fq-div{width:1px;height:16px;background:var(--bd);}
+/* 주파수 테이블 */
+.fq-tbl-wrap{flex:1;padding:0 12px 12px;overflow-y:auto;}
+.fq-tbl{width:100%;border-collapse:collapse;}
+.fq-tbl tr{border-bottom:1px solid var(--sf3);}
+.fq-tbl tr:active td{background:var(--sf3);}
+.fq-tbl td{padding:6px 4px;font-size:11px;vertical-align:middle;}
+.fq-hz{font-size:10px;font-weight:700;color:var(--t2);width:30%;}
+.fq-bar-td{width:35%;padding:4px;}
+.fq-bar-bg{height:5px;background:var(--sf3);overflow:hidden;}
+.fq-bar-fill{height:100%;transition:width .12s;}
+.fq-val{text-align:right;font-size:14px;font-weight:900;font-variant-numeric:tabular-nums;width:20%;}
+.fq-unit{font-size:8px;color:var(--t3);width:15%;padding-left:2px;}
+/* ══ 하단 컨트롤 ══ */
+.ctrl-bar{flex-shrink:0;background:#fff;border-top:1px solid var(--bd);padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+.ctrl-row1{display:flex;gap:6px;margin-bottom:6px;}
+.ctrl-row2{display:flex;gap:6px;}
+.cbtn{flex:1;padding:12px 4px;border:1px solid;font-size:10px;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.5px;background:transparent;font-family:var(--fn);}
+.cbtn:active{transform:scale(.96);}
+.cbtn:disabled{opacity:.25;cursor:not-allowed;}
+.cb-ble{border-color:#bfdbfe;color:var(--ac);background:#eff6ff;}
+.cb-ble.on{background:var(--ac);color:#fff;}
+.cb-play{border-color:#a7f3d0;color:var(--gn);background:#ecfdf5;}
+.cb-play.on{background:var(--gn);color:#fff;}
+.cb-rec{border-color:#ddd6fe;color:var(--pu);background:#f5f3ff;}
+.cb-rec.on{background:var(--pu);color:#fff;animation:recglow 1.4s infinite;}
+@keyframes recglow{0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.3)}50%{box-shadow:0 0 0 6px rgba(124,58,237,.08)}}
+.cb-pause{border-color:#fde68a;color:var(--am);background:#fffbeb;}
+.cb-stop{border-color:#fca5a5;color:var(--rd);background:#fef2f2;}
+.cb-csv{border-color:var(--bd);color:var(--t2);background:#fff;}
+.status-bar{height:20px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--t1);color:rgba(255,255,255,.6);font-size:8px;flex-shrink:0;}
+.sb-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);display:inline-block;margin-right:4px;}
+.sb-dot.on{background:var(--gn);animation:pulse 1.5s infinite;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal-box{background:#fff;border-top:1px solid var(--bd);width:100%;max-width:480px;max-height:80vh;overflow-y:auto;padding:20px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+.modal-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:3px;}
+.modal-desc{font-size:9px;color:var(--t3);margin-bottom:12px;}
+.m-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+.m-item{padding:10px;border:1px solid var(--bd);background:var(--sf2);cursor:pointer;}
+.m-item.sel{border-color:var(--ac);background:var(--ac-l);}
+.m-item:active{background:var(--sf3);}
+.m-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+.m-sc-tag{font-size:7px;padding:1px 4px;background:var(--sf3);margin-right:4px;}
+.m-lbl{font-size:11px;font-weight:700;color:var(--t1);margin-top:3px;}
+.m-unit{font-size:8px;color:var(--t3);}
+.modal-btns{display:flex;gap:6px;margin-top:14px;}
+.m-ok{flex:1;padding:12px;background:var(--ac);color:#fff;border:none;font-size:12px;font-weight:900;cursor:pointer;}
+.m-cancel{padding:12px 16px;border:1px solid var(--bd);background:transparent;color:var(--t2);font-size:12px;cursor:pointer;}
+.csv-opts{display:flex;flex-direction:column;gap:6px;margin:12px 0;}
+.csv-opt{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--bd);background:var(--sf2);cursor:pointer;}
+.csv-opt.sel{border-color:var(--ac);background:var(--ac-l);}
+.csv-opt input{margin-top:2px;accent-color:var(--ac);}
+.csv-opt strong{font-size:11px;font-weight:700;display:block;margin-bottom:3px;color:var(--t1);}
+.csv-opt span{font-size:9px;color:var(--t3);}
+#toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:var(--t1);border-left:3px solid var(--gn);color:#fff;padding:8px 16px;font-size:10px;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginScreen">
+  <div class="login-logo">CESVA</div>
+  <div class="login-sub">NOISE MONITOR</div>
+  <div class="login-box">
+    <input class="login-inp" id="loginInp" type="password" placeholder="●●●●" maxlength="6"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="login-btn" onclick="checkPw()">LOGIN</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="app">
+  <!-- 헤더 -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-title">CESVA Monitor</div>
+        <div class="hdr-sub">SC250 / SC202</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="conn-chip" id="connChip">
+        <div class="chip-dot"></div>
+        <span id="connTxt">미연결</span>
+      </div>
+      <button class="wake-btn" id="wakeBtn" onclick="toggleWake()">☀</button>
+    </div>
+  </div>
+
+  <!-- 탭 -->
+  <div class="tab-bar">
+    <button class="tab active" id="tabSLM" onclick="switchPage('slm')">소음 모드</button>
+    <button class="tab" id="tabFREQ" onclick="switchPage('freq')">주파수 분석</button>
+  </div>
+
+  <!-- ── 소음 모드 ── -->
+  <div class="page active" id="pageSLM">
+
+    <!-- 빅레벨 -->
+    <div class="big-wrap">
+      <div class="big-card" onclick="openInstModal()">
+        <div class="big-tap-hint">탭하여 변경</div>
+        <div class="big-lbl" id="blLbl">LAF</div>
+        <div class="big-val" id="blVal">---</div>
+        <div class="big-unit">dB</div>
+        <div class="big-ov" id="blOv">OVERLOAD</div>
+        <div class="vu-wrap">
+          <div class="vu-bg"><div class="vu-fill" id="vuFill"></div></div>
+          <div class="vu-scale">
+            <span class="vu-n">30</span><span class="vu-n">50</span>
+            <span class="vu-n">70</span><span class="vu-n">90</span>
+            <span class="vu-n">110</span><span class="vu-n">130</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 파라미터 카드 -->
+    <div class="pcards-wrap">
+      <div class="pcards-hdr">
+        <div class="sec-lbl">파라미터 모니터</div>
+        <button class="sec-btn" onclick="openParamModal()">편집 ▾</button>
+      </div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+
+    <!-- 측정 시간 -->
+    <div class="time-wrap">
+      <div class="time-card">
+        <div class="time-item">
+          <div class="time-lbl">측정 시작</div>
+          <div class="time-val start" id="startVal">--:--:--</div>
+        </div>
+        <div class="time-item">
+          <div class="time-lbl">경과 시간</div>
+          <div class="time-val" id="timeVal">00:00:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 주파수 모드 ── -->
+  <div class="page" id="pageFREQ">
+
+    <!-- Overall 카드 3개 -->
+    <div class="fq-overall">
+      <div class="fq-ov-grid">
+        <div class="fq-ov-card">
+          <div class="fq-ov-lbl" id="fqLblA">L A 1s</div>
+          <div class="fq-ov-val" id="fqValA">---</div>
+          <div class="fq-ov-unit">dB</div>
+        </div>
+        <div class="fq-ov-card">
+          <div class="fq-ov-lbl" id="fqLblC">L C 1s</div>
+          <div class="fq-ov-val" id="fqValC">---</div>
+          <div class="fq-ov-unit">dB</div>
+        </div>
+        <div class="fq-ov-card">
+          <div class="fq-ov-lbl" id="fqLblZ">L Z 1s</div>
+          <div class="fq-ov-val" id="fqValZ">---</div>
+          <div class="fq-ov-unit">dB</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 주파수 설정 -->
+    <div class="fq-ctrl-wrap">
+      <div class="fq-ctrl">
+        <button class="fq-btn on" id="fqO1" onclick="setOct('oct1')">1/1 Oct</button>
+        <button class="fq-btn" id="fqO3" onclick="setOct('oct3')">1/3 Oct</button>
+        <div class="fq-div"></div>
+        <button class="fq-btn on" id="fqWA" onclick="setWt('A')">A</button>
+        <button class="fq-btn" id="fqWC" onclick="setWt('C')">C</button>
+        <button class="fq-btn" id="fqWZ" onclick="setWt('Z')">Z</button>
+        <div class="fq-div"></div>
+        <button class="fq-btn on" id="fqS1s" onclick="setSc('1s')">1s</button>
+        <button class="fq-btn" id="fqSt" onclick="setSc('t')">t</button>
+        <button class="fq-btn" id="fqST" onclick="setSc('T')">T</button>
+        <div class="fq-div"></div>
+        <button class="fq-btn" id="fqMax" onclick="toggleMaxHold()" style="color:var(--am);border-color:rgba(255,171,0,.3);">MAX</button>
+      </div>
+      <!-- 측정 경과 시간 + MAX 상태 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding:5px 2px;">
+        <div style="font-size:9px;color:var(--t3);">측정 경과</div>
+        <div style="font-size:14px;font-weight:700;color:var(--gn);letter-spacing:1px;" id="fqTimeVal">00:00:00</div>
+        <div style="font-size:9px;color:var(--am);font-weight:700;display:none;" id="maxHoldTxt">▶ MAX HOLD</div>
+      </div>
+    </div>
+
+    <!-- 주파수 테이블 -->
+    <div class="fq-tbl-wrap">
+      <table class="fq-tbl">
+        <tbody id="fqTbl"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 상태바 -->
+  <div class="status-bar">
+    <span><span class="sb-dot" id="sbDot"></span><span id="sbState">STOP</span></span>
+    <span id="sampleCnt">샘플 0</span>
+    <span id="sbTime">--:--:--</span>
+    <span id="sbBat">BAT --</span>
+  </div>
+
+  <!-- 하단 컨트롤 -->
+  <div class="ctrl-bar">
+    <div class="ctrl-row1">
+      <button class="cbtn cb-ble" id="btnBLE" onclick="toggleBLE()">⯺ BLE 연결</button>
+      <button class="cbtn cb-play" id="btnPlay" disabled onclick="doPlay()">▶ PLAY</button>
+      <button class="cbtn cb-rec" id="btnRec" disabled onclick="doRec()">● REC</button>
+    </div>
+    <div class="ctrl-row2">
+      <button class="cbtn cb-pause" id="btnPause" disabled onclick="doPause()">⏸ PAUSE</button>
+      <button class="cbtn cb-stop" id="btnStop" disabled onclick="doStop()">■ STOP</button>
+      <button class="cbtn cb-csv" onclick="openCsvModal()">↓ CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- 파라미터 선택 모달 -->
+<div class="modal-bg" id="paramModal">
+  <div class="modal-box">
+    <div class="modal-title">파라미터 선택 (최대 6개)</div>
+    <div class="modal-desc">모니터링할 측정값을 선택하세요.</div>
+    <div class="m-grid" id="mGrid"></div>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeParamModal()">취소</button>
+      <button class="m-ok" onclick="applyParam()">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 순간값 선택 모달 -->
+<div class="modal-bg" id="instModal">
+  <div class="modal-box">
+    <div class="modal-title">레벨 표시값 선택</div>
+    <div class="modal-desc">빅레벨 박스에 표시할 측정값을 선택하세요.</div>
+    <div class="m-grid" id="iGrid"></div>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeInstModal()">취소</button>
+      <button class="m-ok" onclick="applyInst()">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV 모달 -->
+<div class="modal-bg" id="csvModal">
+  <div class="modal-box">
+    <div class="modal-title">CSV 다운로드</div>
+    <div class="csv-opts">
+      <label class="csv-opt sel" id="co1">
+        <input type="radio" name="csvt" value="monitor" checked>
+        <div><strong>파라미터 모니터</strong><span>현재 선택된 파라미터 시계열 데이터</span></div>
+      </label>
+      <label class="csv-opt" id="co2">
+        <input type="radio" name="csvt" value="freqSnap">
+        <div><strong>주파수 분석 스냅샷</strong><span>현재 옥타브 · 가중치 · 구간 기준 대역별 레벨</span></div>
+      </label>
+    </div>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeCsvModal()">취소</button>
+      <button class="m-ok" onclick="doExport()">↓ 다운로드</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   상수
+══════════════════════════════════════════════ */
+const PW='1352';
+const BLE_SVC='0000a002-0000-1000-8000-00805f9b34fb';
+const BLE_WR ='0000c304-0000-1000-8000-00805f9b34fb';
+const BLE_NTF='0000c305-0000-1000-8000-00805f9b34fb';
+const OCT1=[8,16,31.5,63,125,250,500,'1k','2k','4k','8k','16k'];
+const OCT3=[6.3,8,10,12.5,16,20,25,31.5,40,50,63,80,100,125,160,200,250,315,400,500,630,800,'1k','1k25','1k6','2k','2k5','3k15','4k','5k','6k3','8k','10k','12k5','16k','20k'];
+const AW1=[-56.7,-44.7,-39.4,-26.2,-16.1,-8.6,-3.2,0,1.2,1.0,-1.1,-6.6];
+const CW1=[-3.0,-0.8,0,0,0,0,0,0,-0.2,-0.8,-3.0,-8.5];
+const AW3=[-46.0,-39.4,-34.6,-29.6,-26.2,-22.5,-19.1,-16.1,-13.4,-11.1,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.5,0.9,1.2,1.3,1.2,1.0,0.5,-0.1,-1.1,-2.5,-4.3,-6.6,-9.3,-10.9,-10.9,-12.9,-15.7,-16.9,-16.9];
+const CW3=[-10.3,-8.5,-6.9,-5.4,-4.0,-2.9,-2.0,-1.3,-0.8,-0.5,-0.3,-0.2,-0.1,0,0,0,0,0,0,0,0,0,0,-0.1,-0.2,-0.3,-0.5,-0.8,-1.3,-2.0,-3.0,-4.4,-6.2,-8.5,-11.7,-16.9];
+
+const PARAMS=[
+  {id:'LAF',  lbl:'LAF',     sc:'1s',color:'#00d4ff',unit:'dB'},
+  {id:'LAS',  lbl:'LAS',     sc:'1s',color:'#00b8d9',unit:'dB'},
+  {id:'LA1s', lbl:'LA1s',    sc:'1s',color:'#0288d1',unit:'dB'},
+  {id:'LC1s', lbl:'LC1s',    sc:'1s',color:'#0277bd',unit:'dB'},
+  {id:'LZ1s', lbl:'LZ1s',    sc:'1s',color:'#01579b',unit:'dB'},
+  {id:'LCF',  lbl:'LCF',     sc:'1s',color:'#006064',unit:'dB'},
+  {id:'LAt',  lbl:'LAt',     sc:'t', color:'#00e676',unit:'dB'},
+  {id:'LCt',  lbl:'LCt',     sc:'t', color:'#00c853',unit:'dB'},
+  {id:'LZt',  lbl:'LZt',     sc:'t', color:'#00bfa5',unit:'dB'},
+  {id:'LAFmx1s',lbl:'LAFmx1s',sc:'1s',color:'#ff6d00',unit:'dB'},
+  {id:'LAFmn1s',lbl:'LAFmn1s',sc:'1s',color:'#2979ff',unit:'dB'},
+  {id:'LAFmxt', lbl:'LAFmxt', sc:'t', color:'#ff9100',unit:'dB'},
+  {id:'LAFmnt', lbl:'LAFmnt', sc:'t', color:'#448aff',unit:'dB'},
+  {id:'LAT',  lbl:'LAT',     sc:'T', color:'#ffab00',unit:'dB'},
+  {id:'LCT',  lbl:'LCT',     sc:'T', color:'#ff8f00',unit:'dB'},
+  {id:'LZT',  lbl:'LZT',     sc:'T', color:'#ff6f00',unit:'dB'},
+  {id:'LAFmxT', lbl:'LAFmxT', sc:'T', color:'#ff6d00',unit:'dB'},
+  {id:'LCpk1s', lbl:'LCpk1s', sc:'1s',color:'#d500f9',unit:'dB'},
+  {id:'LCpkt',  lbl:'LCpkt',  sc:'t', color:'#aa00ff',unit:'dB'},
+];
+const INST_POOL=['LAF','LAS','LA1s','LC1s','LZ1s','LCF','LAt','LCt','LAt','LAT'];
+
+/* ══════════════════════════════════════════════
+   저장소 / 상태
+══════════════════════════════════════════════ */
+var LS={
+  get:function(k,d){try{var v=localStorage.getItem('cvm_'+k);return v!==null?JSON.parse(v):d;}catch(e){return d;}},
+  set:function(k,v){try{localStorage.setItem('cvm_'+k,JSON.stringify(v));}catch(e){}}
+};
+var C={
+  inst: LS.get('inst','LAF'),
+  cpids:LS.get('cpids',['LAF','LAFmxt','LAFmx1s','LAt','LAFmnt','LAT']),
+  oct:  LS.get('oct','oct1'),
+  wt:   LS.get('wt','A'),
+  sc:   LS.get('sc','1s'),
+};
+function save(){Object.keys(C).forEach(function(k){LS.set(k,C[k]);});}
+
+var connMode=null,bleChar=null,bleDevice=null;
+var mState='STOP',hasRE250=false,isDemo=false,demoTmr=null;
+var samples=0,rxBuf='',pBuf={};
+var tSec=null,TSec=null;
+var latest={},records=[];
+var curPage='slm';
+var _bleQueue=[],_bleQueueRunning=false;
+var wakeLock=null,wakeActive=false;
+var leqSum=0,leqN=0,statMax=-Infinity,statMin=Infinity;
+
+const fBuf={
+  oct1_1s:new Array(12).fill(0),oct3_1s:new Array(36).fill(0),
+  oct1_T:new Array(12).fill(0),oct3_T:new Array(36).fill(0),
+  oct1_t:new Array(12).fill(0),oct3_t:new Array(36).fill(0)
+};
+
+/* ══════════════════════════════════════════════
+   로그인
+══════════════════════════════════════════════ */
+function checkPw(){
+  var v=document.getElementById('loginInp').value;
+  if(v===PW){
+    document.getElementById('loginScreen').classList.add('hidden');
+    init();
+  }else{
+    document.getElementById('loginErr').textContent='비밀번호가 틀렸습니다.';
+    document.getElementById('loginInp').value='';
+    setTimeout(function(){document.getElementById('loginErr').textContent='';},1500);
+  }
+}
+
+/* ══════════════════════════════════════════════
+   토스트
+══════════════════════════════════════════════ */
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._tmr);
+  t._tmr=setTimeout(function(){t.style.opacity='0';},2000);
+}
+
+/* ══════════════════════════════════════════════
+   화면 항상 켜기
+══════════════════════════════════════════════ */
+function toggleWake(){
+  if('wakeLock' in navigator){
+    if(wakeActive){
+      if(wakeLock){wakeLock.release();wakeLock=null;}
+      wakeActive=false;
+      document.getElementById('wakeBtn').classList.remove('on');
+      toast('화면 켜기 해제');
+    }else{
+      navigator.wakeLock.request('screen').then(function(wl){
+        wakeLock=wl;wakeActive=true;
+        document.getElementById('wakeBtn').classList.add('on');
+        toast('화면 항상 켜기 ON');
+        wl.addEventListener('release',function(){wakeActive=false;wakeLock=null;document.getElementById('wakeBtn').classList.remove('on');});
+      }).catch(function(){toast('Wake Lock 실패');});
+    }
+  }else{toast('이 브라우저는 Wake Lock 미지원');}
+}
+
+/* ══════════════════════════════════════════════
+   빅레벨
+══════════════════════════════════════════════ */
+function renderBigLabel(){
+  var p=PARAMS.find(function(x){return x.id===C.inst;})||{lbl:C.inst};
+  document.getElementById('blLbl').textContent=p.lbl;
+}
+function renderBigVal(){
+  var v=latest[C.inst];
+  var el=document.getElementById('blVal');
+  el.textContent=v!=null?v.toFixed(1):'---';
+  el.className='big-val'+(v!=null&&v>=90?' danger':v!=null&&v>=80?' warn':'');
+  if(v!=null){document.getElementById('vuFill').style.width=Math.min(100,Math.max(0,(v-30)/100*100))+'%';}
+  var ov=document.getElementById('blOv');
+  if(ov)ov.classList.toggle('show',latest.LAF_ov===true);
+}
+
+/* ══════════════════════════════════════════════
+   파라미터 카드
+══════════════════════════════════════════════ */
+function buildPCards(){
+  var g=document.getElementById('pgrid');g.innerHTML='';
+  C.cpids.slice(0,6).forEach(function(id){
+    var p=PARAMS.find(function(x){return x.id===id;})||{lbl:id,color:'#8a9ab0',unit:'dB'};
+    var d=document.createElement('div');d.className='pcard';d.id='pc_'+id;
+    d.innerHTML=
+      '<div class="pc-lbl" style="color:'+p.color+'">'+p.lbl+'</div>'+
+      '<div class="pc-val" id="pv_'+id+'" style="color:'+p.color+'">---</div>'+
+      '<div class="pc-unit">'+p.unit+'</div>'+
+      '<div class="pc-bar"><div class="pc-bar-fill" id="pb_'+id+'" style="background:'+p.color+'"></div></div>';
+    g.appendChild(d);
+  });
+}
+function updatePCards(){
+  C.cpids.slice(0,6).forEach(function(id){
+    var el=document.getElementById('pv_'+id);
+    var pb=document.getElementById('pb_'+id);
+    if(!el)return;
+    var v=latest[id];
+    el.textContent=v!=null?v.toFixed(1):'---';
+    if(pb&&v!=null)pb.style.width=Math.min(100,Math.max(0,(v-20)/110*100))+'%';
+  });
+}
+
+/* ══════════════════════════════════════════════
+   통계
+══════════════════════════════════════════════ */
+function updateStat(){
+  /* 통계 박스 제거됨 — 내부 계산만 유지 */
+  var v=latest[C.inst];
+  if(v!=null&&mState!=='STOP'){
+    if(v>statMax)statMax=v;
+    if(v<statMin)statMin=v;
+    leqSum+=Math.pow(10,v/10);leqN++;
+  }
+}
+function resetStat(){leqSum=0;leqN=0;statMax=-Infinity;statMin=Infinity;}
+
+/* ══════════════════════════════════════════════
+   시간
+══════════════════════════════════════════════ */
+function parseHMS(t){if(!t||t.length<8)return null;var p=t.split(':');return(+p[0])*3600+(+p[1])*60+(+p[2]);}
+function toHMS(s){var a=Math.abs(s);return String(Math.floor(a/3600)).padStart(2,'0')+':'+String(Math.floor(a%3600/60)).padStart(2,'0')+':'+String(a%60).padStart(2,'0');}
+function updateTime(dt){
+  document.getElementById('sbTime').textContent=dt;
+  var ns=parseHMS(dt);if(ns===null)return;
+  /* tSec: 첫 장비 패킷 -1초 기준 (장비 측정 시작 시각과 동기화) */
+  if(tSec===null)tSec=ns-1;
+  var td=ns-tSec;if(td<0)td+=86400;
+  var hms=toHMS(td);
+  document.getElementById('timeVal').textContent=hms;
+  document.getElementById('fqTimeVal').textContent=hms;
+}
+
+/* ══════════════════════════════════════════════
+   주파수
+══════════════════════════════════════════════ */
+var maxHoldOn=false;
+var maxHoldBuf={oct1:new Array(12).fill(-Infinity),oct3:new Array(36).fill(-Infinity)};
+
+function toggleMaxHold(){
+  maxHoldOn=!maxHoldOn;
+  var btn=document.getElementById('fqMax');
+  var txt=document.getElementById('maxHoldTxt');
+  if(maxHoldOn){
+    /* 초기화 후 켜기 */
+    maxHoldBuf.oct1=new Array(12).fill(-Infinity);
+    maxHoldBuf.oct3=new Array(36).fill(-Infinity);
+    btn.classList.add('on');
+    btn.style.background='var(--am)';btn.style.color='#000';btn.style.borderColor='var(--am)';
+    if(txt)txt.style.display='block';
+    toast('MAX Hold ON — 1s 기반 최댓값 누적 시작');
+  }else{
+    btn.classList.remove('on');
+    btn.style.background='transparent';btn.style.color='var(--am)';btn.style.borderColor='rgba(255,171,0,.3)';
+    if(txt)txt.style.display='none';
+    toast('MAX Hold OFF — 실시간 복귀');
+  }
+  renderFqTable();updateFqOverall();
+}
+function applyW(vals,oct,wt){
+  var w=oct==='oct1'?(wt==='A'?AW1:wt==='C'?CW1:null):(wt==='A'?AW3:wt==='C'?CW3:null);
+  if(!w)return vals.slice();
+  return vals.map(function(v,i){return v!=null?v+(w[i]||0):null;});
+}
+function overall(vals){
+  var valid=vals.filter(function(v){return v!=null&&v>0;});
+  if(!valid.length)return null;
+  return 10*Math.log10(valid.reduce(function(a,v){return a+Math.pow(10,v/10);},0));
+}
+function fqColor(i,n){
+  var r=i/Math.max(n-1,1);
+  return r<.22?'#1565c0':r<.44?'#0277bd':r<.66?'#00897b':r<.84?'#f57c00':'#e53935';
+}
+function setOct(m){
+  C.oct=m;save();
+  document.getElementById('fqO1').classList.toggle('on',m==='oct1');
+  document.getElementById('fqO3').classList.toggle('on',m==='oct3');
+  renderFqTable();updateFqOverall();
+}
+function setWt(w){
+  C.wt=w;save();
+  ['A','C','Z'].forEach(function(x){document.getElementById('fqW'+x).classList.toggle('on',x===w);});
+  renderFqTable();updateFqOverall();
+}
+function setSc(s){
+  C.sc=s;save();
+  ['1s','t','T'].forEach(function(x){document.getElementById('fqS'+x).classList.toggle('on',x===s);});
+  renderFqTable();updateFqOverall();
+}
+var _fpDb=null;
+function renderFqTable(){
+  /* MAX Hold: 항상 1s 데이터 기반으로 누적 */
+  if(maxHoldOn){
+    var raw1s=(fBuf[C.oct+'_1s']||[]).slice();
+    var buf=C.oct==='oct1'?maxHoldBuf.oct1:maxHoldBuf.oct3;
+    raw1s.forEach(function(v,i){if(v!=null&&v>buf[i])buf[i]=v;});
+  }
+  /* 표시할 Z-weighted 원시값 */
+  var rawZ=maxHoldOn
+    ?(C.oct==='oct1'?maxHoldBuf.oct1:maxHoldBuf.oct3).map(function(v){return isFinite(v)?v:null;})
+    :(fBuf[C.oct+'_'+C.sc]||[]).slice();
+  var wVals=applyW(rawZ,C.oct,C.wt);
+  var freqs=C.oct==='oct1'?OCT1:OCT3;
+  var tbody=document.getElementById('fqTbl');tbody.innerHTML='';
+  freqs.forEach(function(f,i){
+    var v=wVals[i];var z=rawZ[i];
+    var c=fqColor(i,freqs.length);
+    var pct=Math.min(100,Math.max(0,((z||0)-20)/90*100));
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td class="fq-hz" style="color:'+c+'">'+f+' Hz</td>'+
+      '<td class="fq-bar-td"><div class="fq-bar-bg"><div class="fq-bar-fill" style="width:'+pct+'%;background:'+c+'"></div></div></td>'+
+      '<td class="fq-val" style="color:'+(maxHoldOn?'var(--am)':c)+'">'+(v!=null?v.toFixed(1):'-')+'</td>'+
+      '<td class="fq-unit">dB</td>';
+    tbody.appendChild(tr);
+  });
+}
+function updateFqOverall(){
+  var sc=C.sc;
+  var labelMap={};
+  labelMap['1s']=['L A 1s','L C 1s','L Z 1s'];
+  labelMap['t'] =['L A t', 'L C t', 'L Z t'];
+  labelMap['T'] =['L A T', 'L C T', 'L Z T'];
+  var lbls=labelMap[sc]||labelMap['1s'];
+  document.getElementById('fqLblA').textContent=lbls[0];
+  document.getElementById('fqLblC').textContent=lbls[1];
+  document.getElementById('fqLblZ').textContent=lbls[2];
+  var ovA,ovC,ovZ;
+  if(sc==='1s'){ovA=latest.LA1s;ovC=latest.LC1s;ovZ=latest.LZ1s;}
+  else if(sc==='t'){ovA=latest.LAt;ovC=latest.LCt;ovZ=latest.LZt;}
+  else{ovA=latest.LAT;ovC=latest.LCT;ovZ=latest.LZT;}
+  if(ovA==null||ovC==null||ovZ==null){
+    var rz=(fBuf['oct1_'+sc]||[]).slice();
+    if(ovA==null)ovA=overall(applyW(rz,'oct1','A'));
+    if(ovC==null)ovC=overall(applyW(rz,'oct1','C'));
+    if(ovZ==null)ovZ=overall(rz);
+  }
+  document.getElementById('fqValA').textContent=ovA!=null?parseFloat(ovA).toFixed(1):'---';
+  document.getElementById('fqValC').textContent=ovC!=null?parseFloat(ovC).toFixed(1):'---';
+  document.getElementById('fqValZ').textContent=ovZ!=null?parseFloat(ovZ).toFixed(1):'---';
+}
+
+/* ══════════════════════════════════════════════
+   탭 전환
+══════════════════════════════════════════════ */
+function switchPage(p){
+  curPage=p;
+  document.getElementById('pageSLM').classList.toggle('active',p==='slm');
+  document.getElementById('pageFREQ').classList.toggle('active',p==='freq');
+  document.getElementById('tabSLM').classList.toggle('active',p==='slm');
+  document.getElementById('tabFREQ').classList.toggle('active',p==='freq');
+  if(p==='freq'){setTimeout(function(){renderFqTable();updateFqOverall();},50);}
+}
+
+/* ══════════════════════════════════════════════
+   모달
+══════════════════════════════════════════════ */
+var mSel=[];
+function openParamModal(){
+  mSel=C.cpids.slice();
+  var g=document.getElementById('mGrid');g.innerHTML='';
+  PARAMS.forEach(function(p){
+    var on=mSel.indexOf(p.id)!==-1;
+    var d=document.createElement('div');d.className='m-item'+(on?' sel':'');
+    d.innerHTML='<div><span class="m-dot" style="background:'+p.color+'"></span><span class="m-sc-tag">'+p.sc+'</span></div>'+
+      '<div class="m-lbl">'+p.lbl+'</div><div class="m-unit">'+p.unit+'</div>';
+    d.onclick=function(){
+      var idx=mSel.indexOf(p.id);
+      if(idx!==-1){if(mSel.length>1){mSel.splice(idx,1);d.classList.remove('sel');}}
+      else{if(mSel.length<6){mSel.push(p.id);d.classList.add('sel');}}
+    };
+    g.appendChild(d);
+  });
+  document.getElementById('paramModal').classList.add('open');
+}
+function closeParamModal(){document.getElementById('paramModal').classList.remove('open');}
+function applyParam(){C.cpids=mSel.slice();save();buildPCards();updatePCards();closeParamModal();}
+
+var iSel='';
+function openInstModal(){
+  iSel=C.inst;
+  var g=document.getElementById('iGrid');g.innerHTML='';
+  var pool=['LAF','LAS','LA1s','LC1s','LZ1s','LCF','LAt','LCt','LZt','LAT','LCT','LZT'];
+  pool.forEach(function(id){
+    var p=PARAMS.find(function(x){return x.id===id;})||{lbl:id,color:'#8a9ab0',sc:'',unit:'dB'};
+    var on=iSel===id;
+    var d=document.createElement('div');d.className='m-item'+(on?' sel':'');
+    d.innerHTML='<div><span class="m-dot" style="background:'+p.color+'"></span><span class="m-sc-tag">'+p.sc+'</span></div>'+
+      '<div class="m-lbl">'+p.lbl+'</div><div class="m-unit">'+p.unit+'</div>';
+    d.onclick=function(){
+      iSel=id;
+      document.querySelectorAll('#iGrid .m-item').forEach(function(el){el.classList.remove('sel');});
+      d.classList.add('sel');
+    };
+    g.appendChild(d);
+  });
+  document.getElementById('instModal').classList.add('open');
+}
+function closeInstModal(){document.getElementById('instModal').classList.remove('open');}
+function applyInst(){C.inst=iSel;save();renderBigLabel();renderBigVal();closeInstModal();}
+
+function openCsvModal(){document.getElementById('csvModal').classList.add('open');}
+function closeCsvModal(){document.getElementById('csvModal').classList.remove('open');}
+
+/* 모달 배경 클릭으로 닫기 */
+['paramModal','instModal','csvModal'].forEach(function(id){
+  document.getElementById(id).addEventListener('click',function(e){
+    if(e.target===this)this.classList.remove('open');
+  });
+});
+/* CSV 라디오 스타일 */
+document.querySelectorAll('input[name="csvt"]').forEach(function(r){
+  r.addEventListener('change',function(){
+    document.querySelectorAll('.csv-opt').forEach(function(o){o.classList.remove('sel');});
+    r.closest('.csv-opt').classList.add('sel');
+  });
+});
+
+/* ══════════════════════════════════════════════
+   CSV 내보내기
+══════════════════════════════════════════════ */
+function fv(v){return(v==null||isNaN(v))?'-':parseFloat(v).toFixed(1);}
+function doExport(){
+  var type=(document.querySelector('input[name="csvt"]:checked')||{}).value||'monitor';
+  var SEP='\r\n';
+  var ts=new Date().toISOString().slice(0,19).replace(/[T:]/g,'-');
+  var csv='',fn='';
+  if(type==='monitor'){
+    var hdr=['Date-Time','t(offset)'].concat(C.cpids.map(function(id){
+      var p=PARAMS.find(function(x){return x.id===id;});return p?p.lbl:id;
+    }));
+    var rows=records.map(function(r,i){
+      var sec=i+1;
+      var tOff=toHMS(sec);
+      return[r.t,tOff].concat(C.cpids.map(function(id){return fv(r[id]);})).join(';');
+    });
+    csv='sep=;'+SEP+hdr.join(';')+SEP+rows.join(SEP);
+    fn='CESVA_monitor_'+ts+'.csv';
+  }else{
+    var sc=C.sc,wt=C.wt,oct=C.oct;
+    var freqs=oct==='oct1'?OCT1:OCT3;
+    var rawZ=(fBuf[oct+'_'+sc]||[]).slice();
+    var wVals=applyW(rawZ,oct,wt);
+    var now=new Date();
+    var dateLbl=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+
+      ' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+    csv='sep=;'+SEP+
+      'Frequency Analysis Snapshot'+SEP+
+      'Octave;'+(oct==='oct1'?'1/1 Octave':'1/3 Octave')+SEP+
+      'Weighting;'+wt+SEP+'Interval;'+sc+SEP+'Date;'+dateLbl+SEP+SEP+
+      'Hz;'+wt+'-weighted (dB);Z-weighted (dB)'+SEP+
+      freqs.map(function(f,i){return f+';'+(wVals[i]!=null?wVals[i].toFixed(1):'-')+';'+(rawZ[i]!=null?rawZ[i].toFixed(1):'-');}).join(SEP);
+    fn='CESVA_freqSnap_'+oct+'_'+wt+'_'+sc+'_'+ts+'.csv';
+  }
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=fn;a.click();URL.revokeObjectURL(a.href);
+  toast('CSV 저장: '+fn);closeCsvModal();
+}
+
+/* ══════════════════════════════════════════════
+   상태 머신
+══════════════════════════════════════════════ */
+var SM={'0':'STOP','1':'PLAY','2':'REC','3':'PAUSE','4':'PAUSE_REC'};
+function applyState(sc){
+  var st=SM[sc]||sc||'STOP';mState=st;
+  document.getElementById('sbState').textContent=st;
+  var dot=document.getElementById('sbDot');
+  dot.className='sb-dot'+(st==='PLAY'||st==='REC'?' on':'');
+  var isStop=st==='STOP',isActive=st==='PLAY'||st==='REC',isPause=st==='PAUSE'||st==='PAUSE_REC';
+  document.getElementById('btnPlay').disabled=!(isStop||isPause);
+  document.getElementById('btnRec').disabled=!hasRE250||!isStop;
+  document.getElementById('btnPause').disabled=!isActive;
+  document.getElementById('btnStop').disabled=isStop;
+  document.getElementById('btnPlay').classList.toggle('on',st==='PLAY');
+  document.getElementById('btnRec').classList.toggle('on',st==='REC');
+  if(isStop){resetStat();}
+}
+
+/* ══════════════════════════════════════════════
+   프로토콜
+══════════════════════════════════════════════ */
+function procRx(){
+  var s,e;
+  while((s=rxBuf.indexOf('\x02'))!==-1&&(e=rxBuf.indexOf('\x03',s))!==-1){
+    dispatch(rxBuf.slice(s+1,e));rxBuf=rxBuf.slice(e+1);
+  }
+  if(rxBuf.indexOf('\x02')===-1)rxBuf='';
+  if(rxBuf.length>32768)rxBuf='';
+}
+function dispatch(pkt){
+  if(!pkt)return;
+  var f=pkt[0];
+  if(f==='I'&&pkt[1]===' '){
+    var p=pkt.slice(2).trim().split(/\s+/);
+    toast('장치: '+(p[0]||'?')+' FW:'+(p[1]||'?'));
+    setTimeout(function(){sendCmd('H1');},400);return;
+  }
+  if(pkt.slice(0,2)==='H1'){
+    var mod=parseInt((pkt.slice(3).trim().split(/\s+/)[4]||'00'),16);
+    hasRE250=!!(mod&1);
+    if(mState==='STOP')document.getElementById('btnRec').disabled=!hasRE250;
+    return;
+  }
+  if(f==='E'&&pkt.length>=2){
+    var BAT={'0':'0%','1':'25%','2':'50%','3':'75%','4':'100%','5':'외부','6':'종료'};
+    document.getElementById('sbBat').textContent='BAT '+(BAT[pkt[3]]||'--');
+    applyState(pkt[1]);return;
+  }
+  if(f==='R'){
+    var rp=pkt.slice(1).trim().split(/\s+/);
+    var timePart=(rp[3]||'').replace(/-/g,':');
+    if(timePart&&timePart.length>=8){
+      document.getElementById('startVal').textContent=timePart;
+      /* tSec는 첫 장비 패킷에서 리셋 */
+      tSec=null;
+    }
+    toast('REC: '+(rp[1]||''));
+    return;
+  }
+  if(f==='S'){parseOld(pkt);return;}
+  if(f==='s'){parseNew(pkt);return;}
+}
+function parseOld(pkt){
+  var hms=pkt.slice(1,7),rest=pkt.slice(7);
+  var flds=[],pos=0;
+  for(var i=0;i<14;i++){
+    if(pos>=rest.length)break;var ov=false;
+    if(rest[pos]==='^'){ov=true;pos++;}else if(rest[pos]===' '){pos++;}
+    var n=parseInt(rest.slice(pos,pos+4),10);pos+=4;
+    flds.push({v:isNaN(n)?null:n/10,ov:ov});
+  }
+  if(flds.length<12)return;
+  var dt=hms.slice(0,2)+':'+hms.slice(2,4)+':'+hms.slice(4,6);
+  latest={LC1s:flds[0]&&flds[0].v,LA1s:flds[1]&&flds[1].v,LCt:flds[2]&&flds[2].v,LAt:flds[3]&&flds[3].v,
+    LAF:flds[4]&&flds[4].v,LAFmn1s:flds[5]&&flds[5].v,LAFmx1s:flds[6]&&flds[6].v,
+    LAS:flds[7]&&flds[7].v,LCpkt:flds[10]&&flds[10].v,LCF:flds[11]&&flds[11].v,LAF_ov:flds[4]&&flds[4].ov};
+  onSample(dt);
+}
+function lv5(s,p){if(p+5>s.length)return{v:null,ov:false};var sat=s[p],n=parseInt(s.slice(p+1,p+5),10);return{v:isNaN(n)?null:n/10,ov:sat==='o'||sat==='b'};}
+function parseNew(pkt){
+  var pn=pkt.slice(1,3),body=pkt.slice(3);
+  if(pn==='00'){pBuf.hms=body.slice(2,8);return;}
+  if(pn==='01'){
+    var f=[],p=0;while(p+5<=body.length){f.push(lv5(body,p));p+=5;}
+    if(f.length<13)return;
+    pBuf.p01={LZ1s:f[0].v,LC1s:f[1].v,LA1s:f[2].v,LCF:f[3].v,LCpk1s:f[6].v,LAF:f[7].v,LAFmx1s:f[8].v,LAFmn1s:f[9].v,LAS:f[10].v,LAF_ov:f[7].ov};return;
+  }
+  if(pn==='02'){
+    var f2=[],p2=0;while(p2+5<=body.length){f2.push(lv5(body,p2));p2+=5;}
+    pBuf.p02={LZT:f2[0]&&f2[0].v,LCT:f2[1]&&f2[1].v,LAT:f2[2]&&f2[2].v,LCpkT:f2[5]&&f2[5].v,LAFmxT:f2[6]&&f2[6].v,LAFmnT:f2[7]&&f2[7].v};return;
+  }
+  if(pn==='03'){
+    var f3=[],p3=0;while(p3+5<=body.length){f3.push(lv5(body,p3));p3+=5;}
+    pBuf.p03={LZt:f3[0]&&f3[0].v,LCt:f3[1]&&f3[1].v,LAt:f3[2]&&f3[2].v,LCpkt:f3[5]&&f3[5].v,LAFmxt:f3[6]&&f3[6].v,LAFmnt:f3[7]&&f3[7].v};
+    if(pBuf.p01){
+      latest=Object.assign({},pBuf.p01,pBuf.p02||{},pBuf.p03);
+      var h=pBuf.hms||'000000';
+      onSample(h.slice(0,2)+':'+h.slice(2,4)+':'+h.slice(4,6));
+      pBuf.p01=null;pBuf.p02=null;pBuf.p03=null;
+    }return;
+  }
+  var fmap={'04':'oct1_1s','05':'oct1_T','06':'oct1_t','07':'oct3_1s','08':'oct3_T','09':'oct3_t'};
+  if(fmap[pn]){
+    var fa=[],pa=0;while(pa+5<=body.length){fa.push(lv5(body,pa).v);pa+=5;}
+    var na=parseInt(pn,10)>=7?36:12;
+    fBuf[fmap[pn]]=fa.slice(0,na).map(function(v){return v!=null?v:0;});
+    if(_fpDb)clearTimeout(_fpDb);
+    _fpDb=setTimeout(function(){if(curPage==='freq'){renderFqTable();updateFqOverall();}},200);
+  }
+}
+
+/* ══════════════════════════════════════════════
+   샘플 처리
+══════════════════════════════════════════════ */
+function onSample(dt){
+  samples++;
+  document.getElementById('sampleCnt').textContent='샘플 '+samples;
+  requestAnimationFrame(function(){
+    renderBigVal();
+    updatePCards();
+    updateStat();
+    updateTime(dt);
+    if(curPage==='freq'){
+      clearTimeout(_fpDb);
+      _fpDb=setTimeout(function(){renderFqTable();updateFqOverall();},200);
+    }
+  });
+  records.push(Object.assign({t:dt},latest));
+}
+
+/* ══════════════════════════════════════════════
+   BLE
+══════════════════════════════════════════════ */
+function bleSendQueued(data){
+  return new Promise(function(resolve){
+    _bleQueue.push({data:data,resolve:resolve});
+    if(!_bleQueueRunning)_runBleQueue();
+  });
+}
+function _runBleQueue(){
+  if(!_bleQueue.length){_bleQueueRunning=false;return;}
+  _bleQueueRunning=true;
+  var item=_bleQueue.shift();
+  if(!bleChar){item.resolve();_runBleQueue();return;}
+  var p;
+  try{
+    if(bleChar._useWWR&&typeof bleChar.writeValueWithoutResponse==='function')p=bleChar.writeValueWithoutResponse(item.data);
+    else if(typeof bleChar.writeValueWithResponse==='function')p=bleChar.writeValueWithResponse(item.data);
+    else p=bleChar.writeValue(item.data);
+  }catch(e){item.resolve();_runBleQueue();return;}
+  p.then(function(){item.resolve();setTimeout(_runBleQueue,150);})
+   .catch(function(e){toast('TX 오류: '+e.message);item.resolve();setTimeout(_runBleQueue,400);});
+}
+function sendCmd(cmd){
+  if(!connMode&&!isDemo)return Promise.resolve();
+  var data=new TextEncoder().encode(cmd+'\r');
+  if(connMode==='ble'&&bleChar){
+    var ctrlCmds=['0','1','2','4','backerase'];
+    var isMeasuring=mState==='PLAY'||mState==='REC'||mState==='PAUSE'||mState==='PAUSE_REC';
+    if(isMeasuring&&ctrlCmds.indexOf(cmd)===-1)return Promise.resolve();
+    return bleSendQueued(data);
+  }
+  return Promise.resolve();
+}
+function onConn(name){
+  connMode='ble';
+  var chip=document.getElementById('connChip');
+  chip.className='conn-chip ok';
+  document.getElementById('connTxt').textContent=name;
+  document.getElementById('btnBLE').textContent='✕ 연결 해제';
+  document.getElementById('btnBLE').classList.add('on');
+  document.getElementById('btnPlay').disabled=false;
+  document.getElementById('btnStop').disabled=false;
+  applyState('0');toast(name+' 연결됨');
+  setTimeout(function(){sendCmd('I').then(function(){setTimeout(function(){sendCmd('E');},500);});},1000);
+}
+function onDisconn(){
+  connMode=null;bleChar=null;bleDevice=null;
+  _bleQueue=[];_bleQueueRunning=false;
+  tSec=null;
+  var chip=document.getElementById('connChip');
+  chip.className='conn-chip';
+  document.getElementById('connTxt').textContent='미연결';
+  document.getElementById('btnBLE').textContent='⯺ BLE 연결';
+  document.getElementById('btnBLE').classList.remove('on');
+  ['btnPlay','btnRec','btnPause','btnStop'].forEach(function(id){document.getElementById(id).disabled=true;});
+  document.getElementById('startVal').textContent='--:--:--';
+  document.getElementById('timeVal').textContent='00:00:00';
+  document.getElementById('fqTimeVal').textContent='00:00:00';
+  applyState('0');toast('연결 해제됨');
+}
+function toggleBLE(){
+  if(connMode){
+    if(bleDevice&&bleDevice.gatt.connected)bleDevice.gatt.disconnect();
+    else onDisconn();
+    return;
+  }
+  if(!navigator.bluetooth){toast('Web Bluetooth 미지원 (Chrome 필요)');return;}
+  toast('BLE 장치 검색 중...');
+  navigator.bluetooth.requestDevice({
+    filters:[{namePrefix:'SC250'},{namePrefix:'SC202'}],
+    optionalServices:[BLE_SVC]
+  }).then(function(dev){
+    bleDevice=dev;
+    dev.addEventListener('gattserverdisconnected',function(){onDisconn();});
+    return dev.gatt.connect();
+  }).then(function(srv){return srv.getPrimaryService(BLE_SVC);})
+  .then(function(svc){return Promise.all([svc.getCharacteristic(BLE_WR),svc.getCharacteristic(BLE_NTF)]);})
+  .then(function(chars){
+    bleChar=chars[0];
+    if(bleChar.properties&&bleChar.properties.writeWithoutResponse)bleChar._useWWR=true;
+    return chars[1].startNotifications().then(function(){return chars[1];});
+  }).then(function(ntf){
+    ntf.addEventListener('characteristicvaluechanged',function(e){rxBuf+=new TextDecoder().decode(e.target.value);procRx();});
+    onConn(bleDevice.name||'SC2xx');
+  }).catch(function(e){
+    var msg=String(e.message||'');
+    if(e.name==='NotFoundError'||msg.indexOf('cancel')!==-1)toast('BLE 선택 취소');
+    else toast('BLE 실패: '+msg);
+    bleChar=null;bleDevice=null;
+  });
+}
+
+/* ══════════════════════════════════════════════
+   측정 제어
+══════════════════════════════════════════════ */
+var startTimeDisplay='--:--:--';
+
+function doPlay(){
+  if(mState==='STOP'||mState==='PAUSE'||mState==='PAUSE_REC'){
+    if(mState==='STOP'){
+      /* 새 측정 시작 시에만 시간 리셋 */
+      document.getElementById('timeVal').textContent='00:00:00';
+      document.getElementById('fqTimeVal').textContent='00:00:00';
+      var now=new Date();
+      startTimeDisplay=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+      document.getElementById('startVal').textContent=startTimeDisplay;
+      tSec=null;
+    }
+    sendCmd('1').then(function(){applyState('1');});
+    if(isDemo){if(demoTmr)clearInterval(demoTmr);demoTmr=setInterval(demoTick,1000);}
+  }
+}
+function doRec(){
+  if(mState!=='STOP')return;
+  /* 새 측정 시작 시 시간 리셋 */
+  document.getElementById('timeVal').textContent='00:00:00';
+  document.getElementById('fqTimeVal').textContent='00:00:00';
+  tSec=null;
+  sendCmd('4').then(function(){applyState('2');});
+  if(isDemo){if(demoTmr)clearInterval(demoTmr);demoTmr=setInterval(demoTick,1000);}
+}
+function doPause(){
+  if(mState==='STOP')return;
+  sendCmd('2').then(function(){applyState(mState==='REC'?'4':'3');});
+  if(isDemo&&demoTmr){clearInterval(demoTmr);demoTmr=null;}
+}
+function doStop(){
+  sendCmd('0').then(function(){applyState('0');});
+  if(isDemo&&demoTmr){clearInterval(demoTmr);demoTmr=null;}
+}
+
+/* ══════════════════════════════════════════════
+   데모
+══════════════════════════════════════════════ */
+var demoAng=0;
+function toggleDemo(){
+  if(isDemo){
+    isDemo=false;if(demoTmr){clearInterval(demoTmr);demoTmr=null;}
+    document.getElementById('btnDemo').textContent='◎ DEMO';
+    onDisconn();return;
+  }
+  isDemo=true;connMode='demo';hasRE250=true;
+  document.getElementById('btnDemo').textContent='■ DEMO 중지';
+  onConn('SC250 (DEMO)');
+}
+function demoTick(){
+  if(mState==='STOP'||mState==='PAUSE'||mState==='PAUSE_REC')return;
+  demoAng+=0.055;
+  var b=65+Math.sin(demoAng)*13+(Math.random()-.5)*3;
+  var now=new Date();
+  var dt=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  if(tSec===null)tSec=parseHMS(dt)-1;
+  latest={LZ1s:b+3.5,LC1s:b+2.2,LA1s:b+.1,LCF:b+1.8,LCpk1s:b+9+Math.random()*3,
+    LAF:b+(Math.random()-.5)*1.5,LAFmx1s:b+5.5+Math.random()*2,LAFmn1s:b-6-Math.random()*2,
+    LAS:b-1.1,LCt:b+2.3,LAt:b-.4,LCpkt:b+7.5,LAFmxt:b+6.5,LAFmnt:b-7.2,LZt:b+3.1,
+    LCT:b+2.8,LAT:b-.1,LZT:b+3.8,LCpkT:b+8.2,LAFmxT:b+7,LAFmnT:b-8,LAF_ov:false};
+  var s1=[.42,.63,.78,.88,.94,1,.97,.90,.80,.65,.48,.32];
+  var n3=OCT3.length;
+  fBuf.oct1_1s=s1.map(function(s){return Math.max(20,(b-8)*s+(Math.random()-.5)*3.5);});
+  fBuf.oct3_1s=Array.from({length:n3},function(_,i){return Math.max(18,(b-8)*Math.sin(i/n3*Math.PI)*.9+(Math.random()-.5)*4);});
+  fBuf.oct1_T=fBuf.oct1_1s.map(function(v){return Math.min(v+.8,108);});
+  fBuf.oct3_T=fBuf.oct3_1s.map(function(v){return Math.min(v+.8,108);});
+  fBuf.oct1_t=fBuf.oct1_1s.map(function(v){return v-.3;});
+  fBuf.oct3_t=fBuf.oct3_1s.map(function(v){return v-.3;});
+  onSample(dt);
+}
+
+/* ══════════════════════════════════════════════
+   초기화
+══════════════════════════════════════════════ */
+function init(){
+  renderBigLabel();
+  buildPCards();
+  setInterval(function(){document.getElementById('sbTime').textContent=new Date().toTimeString().slice(0,8);},1000);
+  /* 설정 버튼 초기 상태 */
+  document.getElementById('fqO1').classList.toggle('on',C.oct==='oct1');
+  document.getElementById('fqO3').classList.toggle('on',C.oct==='oct3');
+  ['A','C','Z'].forEach(function(x){document.getElementById('fqW'+x).classList.toggle('on',x===C.wt);});
+  ['1s','t','T'].forEach(function(x){document.getElementById('fqS'+x).classList.toggle('on',x===C.sc);});
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('loginInp').focus();
+});
+</script>
+</body>
+</html>
