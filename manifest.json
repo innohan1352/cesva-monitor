@@ -1,0 +1,22 @@
+{
+  "name": "CESVA Monitor",
+  "short_name": "CESVA",
+  "description": "CESVA SC250/SC202 Noise Monitor",
+  "start_url": "/cesva-monitor/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1976d2",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/innohan1352/cesva-monitor/main/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/innohan1352/cesva-monitor/main/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

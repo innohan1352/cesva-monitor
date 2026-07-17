@@ -6,7 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#1976d2">
+<link rel="manifest" href="manifest.json">
 <title>CESVA Monitor</title>
 <style>
 *,::before,::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1114,6 +1115,9 @@ function init(){
 
 window.addEventListener('DOMContentLoaded',function(){
   document.getElementById('loginInp').focus();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js');
+  }
 });
 </script>
 </body>
