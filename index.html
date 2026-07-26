@@ -6,8 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1976d2">
-<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
 <title>CESVA Monitor</title>
 <style>
 *,::before,::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -94,12 +93,13 @@ html,body{height:100%;background:#f0f2f6;color:#1a1d2e;font-family:'JetBrains Mo
 .pc-bar-fill{height:100%;transition:width .15s;}
 /* 측정 시간 */
 .time-wrap{padding:8px 12px 12px;flex-shrink:0;}
-.time-card{background:#fff;border:1px solid var(--bd);padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-.time-item{display:flex;flex-direction:column;gap:3px;}
-.time-item:last-child{text-align:right;align-items:flex-end;}
-.time-lbl{font-size:8px;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;}
-.time-val{font-size:16px;font-weight:700;color:var(--gn);letter-spacing:1px;font-variant-numeric:tabular-nums;}
-.time-val.start{color:var(--ac);}
+.time-card{background:#fff;border:1px solid var(--bd);padding:10px 14px;display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.time-row{display:flex;align-items:center;}
+.time-lbl{font-size:12px;color:var(--t3);letter-spacing:.3px;width:56px;flex-shrink:0;}
+.time-date{font-size:12px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;flex:1;}
+.time-clock{font-size:12px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;width:70px;text-align:right;}
+.time-val{font-size:12px;font-weight:700;color:var(--gn);font-variant-numeric:tabular-nums;width:70px;text-align:right;}
+.time-divider{height:1px;background:var(--bd);margin:2px 0;}
 /* ══ 주파수 모드 ══ */
 .fq-overall{padding:12px 12px 8px;flex-shrink:0;}
 .fq-ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
@@ -243,12 +243,14 @@ html,body{height:100%;background:#f0f2f6;color:#1a1d2e;font-family:'JetBrains Mo
     <!-- 측정 시간 -->
     <div class="time-wrap">
       <div class="time-card">
-        <div class="time-item">
-          <div class="time-lbl">측정 시작</div>
-          <div class="time-val start" id="startVal">--:--:--</div>
+        <div class="time-row">
+          <div class="time-lbl">시작 시간</div>
+          <div class="time-date" id="startDate">----.--.--</div>
+          <div class="time-clock" id="startClock">--:--:--</div>
         </div>
-        <div class="time-item">
-          <div class="time-lbl">경과 시간</div>
+        <div class="time-row">
+          <div class="time-lbl">측정 시간</div>
+          <div class="time-date"></div>
           <div class="time-val" id="timeVal">00:00:00</div>
         </div>
       </div>
@@ -295,11 +297,18 @@ html,body{height:100%;background:#f0f2f6;color:#1a1d2e;font-family:'JetBrains Mo
         <div class="fq-div"></div>
         <button class="fq-btn" id="fqMax" onclick="toggleMaxHold()" style="color:var(--am);border-color:rgba(255,171,0,.3);">MAX</button>
       </div>
-      <!-- 측정 경과 시간 + MAX 상태 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding:5px 2px;">
-        <div style="font-size:9px;color:var(--t3);">측정 경과</div>
-        <div style="font-size:14px;font-weight:700;color:var(--gn);letter-spacing:1px;" id="fqTimeVal">00:00:00</div>
-        <div style="font-size:9px;color:var(--am);font-weight:700;display:none;" id="maxHoldTxt">▶ MAX HOLD</div>
+      <!-- 측정 시간 -->
+      <div style="background:#fff;border:1px solid var(--bd);padding:8px 14px;margin-top:6px;display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;">
+          <div style="font-size:12px;color:var(--t3);width:56px;flex-shrink:0;">시작 시간</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ac);flex:1;font-variant-numeric:tabular-nums;" id="fqStartDate">----.--.--</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ac);width:70px;text-align:right;font-variant-numeric:tabular-nums;" id="fqStartClock">--:--:--</div>
+        </div>
+        <div style="display:flex;align-items:center;">
+          <div style="font-size:12px;color:var(--t3);width:56px;flex-shrink:0;">측정 시간</div>
+          <div style="flex:1;"></div>
+          <div style="font-size:12px;font-weight:700;color:var(--gn);width:70px;text-align:right;font-variant-numeric:tabular-nums;" id="fqTimeVal">00:00:00</div>
+        </div>
       </div>
     </div>
 
@@ -557,9 +566,23 @@ function updateStat(){
 }
 function resetStat(){leqSum=0;leqN=0;statMax=-Infinity;statMin=Infinity;}
 
-/* ══════════════════════════════════════════════
-   시간
-══════════════════════════════════════════════ */
+/* 시작 날짜/시간 설정 헬퍼 */
+function setStartDateTime(timeStr){
+  var now=new Date();
+  var dateStr=now.getFullYear()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+String(now.getDate()).padStart(2,'0');
+  var dateEl1=document.getElementById('startDate');
+  var clockEl1=document.getElementById('startClock');
+  var dateEl2=document.getElementById('fqStartDate');
+  var clockEl2=document.getElementById('fqStartClock');
+  if(dateEl1)dateEl1.textContent=dateStr;
+  if(clockEl1)clockEl1.textContent=timeStr||'--:--:--';
+  if(dateEl2)dateEl2.textContent=dateStr;
+  if(clockEl2)clockEl2.textContent=timeStr||'--:--:--';
+}
+function resetStartDateTime(){
+  ['startDate','fqStartDate'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='----.--.--';});
+  ['startClock','fqStartClock'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='--:--:--';});
+}
 function parseHMS(t){if(!t||t.length<8)return null;var p=t.split(':');return(+p[0])*3600+(+p[1])*60+(+p[2]);}
 function toHMS(s){var a=Math.abs(s);return String(Math.floor(a/3600)).padStart(2,'0')+':'+String(Math.floor(a%3600/60)).padStart(2,'0')+':'+String(a%60).padStart(2,'0');}
 function updateTime(dt){
@@ -582,19 +605,17 @@ var maxHoldBuf={oct1:new Array(12).fill(-Infinity),oct3:new Array(36).fill(-Infi
 function toggleMaxHold(){
   maxHoldOn=!maxHoldOn;
   var btn=document.getElementById('fqMax');
-  var txt=document.getElementById('maxHoldTxt');
   if(maxHoldOn){
-    /* 초기화 후 켜기 */
     maxHoldBuf.oct1=new Array(12).fill(-Infinity);
     maxHoldBuf.oct3=new Array(36).fill(-Infinity);
     btn.classList.add('on');
     btn.style.background='var(--am)';btn.style.color='#000';btn.style.borderColor='var(--am)';
-    if(txt)txt.style.display='block';
+    btn.textContent='MAX HOLD';
     toast('MAX Hold ON — 1s 기반 최댓값 누적 시작');
   }else{
     btn.classList.remove('on');
     btn.style.background='transparent';btn.style.color='var(--am)';btn.style.borderColor='rgba(255,171,0,.3)';
-    if(txt)txt.style.display='none';
+    btn.textContent='MAX';
     toast('MAX Hold OFF — 실시간 복귀');
   }
   renderFqTable();updateFqOverall();
@@ -853,7 +874,7 @@ function dispatch(pkt){
     var rp=pkt.slice(1).trim().split(/\s+/);
     var timePart=(rp[3]||'').replace(/-/g,':');
     if(timePart&&timePart.length>=8){
-      document.getElementById('startVal').textContent=timePart;
+      setStartDateTime(timePart);
       /* tSec는 첫 장비 패킷에서 리셋 */
       tSec=null;
     }
@@ -987,7 +1008,7 @@ function onDisconn(){
   document.getElementById('btnBLE').textContent='⯺ BLE 연결';
   document.getElementById('btnBLE').classList.remove('on');
   ['btnPlay','btnRec','btnPause','btnStop'].forEach(function(id){document.getElementById(id).disabled=true;});
-  document.getElementById('startVal').textContent='--:--:--';
+  resetStartDateTime();
   document.getElementById('timeVal').textContent='00:00:00';
   document.getElementById('fqTimeVal').textContent='00:00:00';
   applyState('0');toast('연결 해제됨');
@@ -1037,7 +1058,7 @@ function doPlay(){
       document.getElementById('fqTimeVal').textContent='00:00:00';
       var now=new Date();
       startTimeDisplay=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
-      document.getElementById('startVal').textContent=startTimeDisplay;
+      setStartDateTime(startTimeDisplay);
       tSec=null;
     }
     sendCmd('1').then(function(){applyState('1');});
@@ -1115,9 +1136,6 @@ function init(){
 
 window.addEventListener('DOMContentLoaded',function(){
   document.getElementById('loginInp').focus();
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js');
-  }
 });
 </script>
 </body>
